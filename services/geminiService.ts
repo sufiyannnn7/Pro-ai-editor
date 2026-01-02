@@ -1,6 +1,7 @@
+
 import { GoogleGenAI } from "@google/genai";
-import { SYSTEM_PROMPT_TEMPLATE } from "../constants";
-import { EditingGoal } from "../types";
+import { SYSTEM_PROMPT_TEMPLATE } from "../constants.tsx";
+import { EditingGoal } from "../types.ts";
 
 export const editImage = async (
   base64Image: string,
@@ -8,13 +9,11 @@ export const editImage = async (
   userDescription: string,
   goal: EditingGoal
 ): Promise<string> => {
-  // Ensure the API key is present in the environment
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("Gemini API Key is missing. Please configure the 'API_KEY' environment variable in your deployment settings.");
+    throw new Error("Gemini API Key is missing. Please configure the 'API_KEY' environment variable.");
   }
 
-  // Initialize the GenAI client with the secure environment variable
   const ai = new GoogleGenAI({ apiKey });
   
   const finalPrompt = SYSTEM_PROMPT_TEMPLATE
@@ -48,7 +47,7 @@ export const editImage = async (
       }
     }
 
-    throw new Error("No image data was generated. The AI may have returned text instead. Please try a different prompt.");
+    throw new Error("No image data was generated. Please try a different prompt.");
   } catch (error: any) {
     console.error("Gemini Edit Error:", error);
     throw new Error(error.message || "An unexpected error occurred during image processing.");

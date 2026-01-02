@@ -1,9 +1,9 @@
 
-import React, { useState, useCallback } from 'react';
-import { Layout } from './components/Layout';
-import { Language, EditingGoal, UserPreferences, EditRequest, EditResult } from './types';
-import { LANGUAGES, EDITING_GOALS } from './constants';
-import { editImage } from './services/geminiService';
+import React, { useState } from 'react';
+import { Layout } from './components/Layout.tsx';
+import { EditingGoal, UserPreferences, EditRequest, EditResult } from './types.ts';
+import { LANGUAGES, EDITING_GOALS } from './constants.tsx';
+import { editImage } from './services/geminiService.ts';
 
 const App: React.FC = () => {
   const [step, setStep] = useState<number>(1);
@@ -69,7 +69,7 @@ const App: React.FC = () => {
     <Layout>
       {/* Step 1: Language & Goal */}
       {step === 1 && (
-        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50">
           <h2 className="text-2xl font-bold text-slate-800 mb-2">Welcome!</h2>
           <p className="text-slate-500 mb-8">Let's set up your editing preferences to get started.</p>
           
@@ -131,7 +131,7 @@ const App: React.FC = () => {
 
       {/* Step 2: Image Upload */}
       {step === 2 && (
-        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50">
           <button onClick={() => setStep(1)} className="text-slate-400 hover:text-slate-600 mb-4 flex items-center gap-1 text-sm font-medium transition-colors">
             <i className="fa-solid fa-chevron-left"></i> Back
           </button>
@@ -183,7 +183,7 @@ const App: React.FC = () => {
 
       {/* Step 3: Description & Process */}
       {step === 3 && (
-        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50">
            <button onClick={() => setStep(2)} className="text-slate-400 hover:text-slate-600 mb-4 flex items-center gap-1 text-sm font-medium transition-colors">
             <i className="fa-solid fa-chevron-left"></i> Back
           </button>
@@ -240,7 +240,7 @@ const App: React.FC = () => {
 
       {/* Step 4: Result */}
       {step === 4 && result && (
-        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50 animate-in zoom-in duration-500">
+        <div className="glass rounded-3xl p-8 shadow-xl border border-white/50">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-slate-800">Your Enhanced Photo</h2>
             <div className="flex gap-2">
@@ -295,10 +295,6 @@ const App: React.FC = () => {
           >
             Download HD Result <i className="fa-solid fa-download"></i>
           </a>
-          
-          <p className="text-center text-slate-400 text-xs mt-6">
-            <i className="fa-solid fa-user-shield mr-1"></i> Facial structure and identity parameters were locked during this edit.
-          </p>
         </div>
       )}
     </Layout>
