@@ -2,6 +2,5 @@
 {
   "name": "pro-ai-image-editor",
   "version": "1.0.0",
-  "private": true,
-  "description": "Static Vanilla JS AI Image Editor"
+  "private": true
 }
