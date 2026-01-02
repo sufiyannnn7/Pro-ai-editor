@@ -1,0 +1,7 @@
+{
+  "name": "ProAI Image Editor",
+  "description": "A professional AI-powered image editing assistant that enhances your photos while preserving natural features and facial identity using the latest Gemini models.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
