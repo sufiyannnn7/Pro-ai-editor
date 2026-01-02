@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProAI Image Editor</title>
+    <title>ProAI Image Editor | Professional Face-Safe Enhancement</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,37 +12,218 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
+            color: #1e293b;
         }
         .glass {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+        .step-transition {
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
-        .animate-shimmer {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
+        .hidden-step {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
         }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "vite": "https://esm.sh/vite@^7.3.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
   }
 }
 </script>
 </head>
-<body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+    
+    <header class="w-full max-w-4xl flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                <i class="fa-solid fa-camera-retro text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">ProAI Editor</h1>
+                <p class="text-xs text-slate-500 font-medium">Professional Face-Safe Enhancement</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 text-sm text-slate-400">
+            <i class="fa-solid fa-shield-halved text-emerald-500"></i>
+            <span>Identity Protected</span>
+        </div>
+    </header>
+
+    <main id="app-container" class="w-full max-w-2xl">
+        <!-- Step 1: Preferences -->
+        <div id="step-1" class="glass rounded-3xl p-8 shadow-xl border border-white/50 step-transition">
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Welcome!</h2>
+            <p class="text-slate-500 mb-8">Let's set up your editing preferences to get started.</p>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-3">1️⃣ Preferred Language</label>
+                    <div id="language-options" class="flex flex-wrap gap-2">
+                        <button data-lang="English" class="lang-btn px-5 py-2.5 rounded-full text-sm font-medium transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-105">English</button>
+                        <button data-lang="Hindi" class="lang-btn px-5 py-2.5 rounded-full text-sm font-medium transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-100">Hindi</button>
+                        <button data-lang="Other" class="lang-btn px-5 py-2.5 rounded-full text-sm font-medium transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-100">Other</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-3">2️⃣ Editing Goal</label>
+                    <div id="goal-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button data-goal="Natural enhancement" class="goal-btn flex items-center gap-3 p-4 rounded-2xl text-left transition-all bg-indigo-50 border-2 border-indigo-600 ring-4 ring-indigo-600/5">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-indigo-600 text-white"><i class="fa-solid fa-leaf"></i></div>
+                            <span class="font-medium text-indigo-900">Natural enhancement</span>
+                        </button>
+                        <button data-goal="Professional photo look" class="goal-btn flex items-center gap-3 p-4 rounded-2xl text-left transition-all bg-white border-2 border-transparent hover:border-slate-100 shadow-sm">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-slate-100 text-slate-400"><i class="fa-solid fa-user-tie"></i></div>
+                            <span class="font-medium text-slate-600">Professional photo look</span>
+                        </button>
+                        <button data-goal="Social media ready" class="goal-btn flex items-center gap-3 p-4 rounded-2xl text-left transition-all bg-white border-2 border-transparent hover:border-slate-100 shadow-sm">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-slate-100 text-slate-400"><i class="fa-brands fa-instagram"></i></div>
+                            <span class="font-medium text-slate-600">Social media ready</span>
+                        </button>
+                        <button data-goal="Studio-style lighting" class="goal-btn flex items-center gap-3 p-4 rounded-2xl text-left transition-all bg-white border-2 border-transparent hover:border-slate-100 shadow-sm">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-slate-100 text-slate-400"><i class="fa-solid fa-lightbulb"></i></div>
+                            <span class="font-medium text-slate-600">Studio-style lighting</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="to-step-2" class="w-full mt-4 bg-slate-900 text-white py-4 rounded-2xl font-bold text-lg hover:bg-slate-800 transition-all active:scale-[0.98] shadow-xl shadow-slate-200">
+                    Continue <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Upload -->
+        <div id="step-2" class="glass rounded-3xl p-8 shadow-xl border border-white/50 step-transition hidden-step">
+            <button class="back-btn text-slate-400 hover:text-slate-600 mb-4 flex items-center gap-1 text-sm font-medium transition-colors">
+                <i class="fa-solid fa-chevron-left"></i> Back
+            </button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Upload Photo</h2>
+            <p class="text-slate-500 mb-8">Select the portrait you'd like us to enhance professionally.</p>
+
+            <div id="drop-zone" class="relative group cursor-pointer border-2 border-dashed border-slate-200 rounded-3xl p-12 transition-all flex flex-col items-center justify-center hover:border-indigo-400 hover:bg-slate-50/50">
+                <input type="file" id="file-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+                <div id="upload-placeholder" class="flex flex-col items-center">
+                    <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
+                    </div>
+                    <p class="font-semibold text-slate-700">Click to upload image</p>
+                    <p class="text-sm text-slate-400 mt-1">PNG, JPG or JPEG supported</p>
+                </div>
+                <div id="image-preview-container" class="hidden relative w-full aspect-square max-w-[240px]">
+                    <img id="image-preview" src="" class="w-full h-full object-cover rounded-2xl shadow-lg ring-4 ring-white" alt="Preview" />
+                    <div class="absolute -bottom-3 -right-3 bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                </div>
+            </div>
+
+            <button id="to-step-3" disabled class="w-full mt-8 py-4 rounded-2xl font-bold text-lg bg-slate-100 text-slate-300 cursor-not-allowed transition-all active:scale-[0.98] shadow-xl">
+                Next Step <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+
+        <!-- Step 3: Prompt -->
+        <div id="step-3" class="glass rounded-3xl p-8 shadow-xl border border-white/50 step-transition hidden-step">
+            <button class="back-btn text-slate-400 hover:text-slate-600 mb-4 flex items-center gap-1 text-sm font-medium transition-colors">
+                <i class="fa-solid fa-chevron-left"></i> Back
+            </button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">What should we fix?</h2>
+            <p class="text-slate-500 mb-8">Describe roughly what you want. We'll handle the pro details.</p>
+
+            <div class="space-y-6">
+                <textarea id="prompt-input" placeholder="Example: soften shadows, brighten eyes, clean background..." class="w-full h-40 bg-white border border-slate-200 rounded-2xl p-5 text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all resize-none font-medium"></textarea>
+                
+                <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-start gap-4">
+                    <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex-shrink-0 flex items-center justify-center">
+                        <i class="fa-solid fa-sparkles"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-emerald-900 text-sm">Pro AI Mode Active</h4>
+                        <p class="text-emerald-700 text-xs mt-0.5 leading-relaxed">
+                            I will enhance this naturally without changing your face or structure. Your real identity is preserved.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="error-msg" class="hidden bg-rose-50 border border-rose-100 rounded-2xl p-4 text-rose-600 text-sm font-medium flex gap-2 items-center">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span id="error-text"></span>
+                </div>
+
+                <button id="process-btn" disabled class="w-full py-4 rounded-2xl font-bold text-lg bg-slate-100 text-slate-300 cursor-not-allowed transition-all active:scale-[0.98] shadow-xl relative overflow-hidden">
+                    <span id="btn-content">Apply Enhancements <i class="fa-solid fa-wand-magic-sparkles ml-2"></i></span>
+                    <span id="btn-loading" class="hidden flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-notch animate-spin-custom"></i> Applying Pro Enhancements...
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Result -->
+        <div id="step-4" class="glass rounded-3xl p-8 shadow-xl border border-white/50 step-transition hidden-step">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Your Enhanced Photo</h2>
+                <div class="flex gap-2">
+                    <button id="new-image-btn" class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all">
+                        New Image <i class="fa-solid fa-plus ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Original</span>
+                    <div class="aspect-square rounded-3xl overflow-hidden border border-slate-100 shadow-inner">
+                        <img id="final-original" class="w-full h-full object-cover" alt="Original" />
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider ml-1">ProAI Enhanced</span>
+                    <div class="aspect-square rounded-3xl overflow-hidden border-4 border-indigo-500 shadow-2xl relative">
+                        <img id="final-result" class="w-full h-full object-cover" alt="Enhanced" />
+                        <div class="absolute top-3 right-3 bg-indigo-600 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                            AI Processed
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-8">
+                <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">AI Adjustments Applied</h4>
+                <div id="ai-tags" class="flex flex-wrap gap-2">
+                    <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-500"></i> Soft Lighting</div>
+                    <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-500"></i> Skin Preservation</div>
+                    <div class="bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-check text-emerald-500"></i> Eye Clarity</div>
+                </div>
+            </div>
+
+            <a id="download-link" href="#" download="pro-enhanced-photo.png" class="w-full flex items-center justify-center gap-3 bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg hover:bg-slate-800 transition-all active:scale-[0.98] shadow-2xl shadow-slate-200">
+                Download HD Result <i class="fa-solid fa-download"></i>
+            </a>
+        </div>
+    </main>
+
+    <footer class="mt-auto py-8 text-slate-400 text-sm text-center">
+        Powered by Gemini 2.5 Flash Image • AI Safety First
+    </footer>
+
+    <script type="module" src="/main.js"></script>
 </body>
 </html>
