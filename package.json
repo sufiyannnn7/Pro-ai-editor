@@ -5,6 +5,6 @@
   "private": true,
   "description": "Professional AI-powered image editing assistant optimized for static ESM deployment.",
   "scripts": {
-    "build": "mkdir -p public && cp -rf index.html index.tsx App.tsx types.ts constants.tsx metadata.json services components public/"
+    "build": "rm -rf public && mkdir -p public && cp index.html index.tsx App.tsx types.ts constants.tsx metadata.json public/ && cp -r services public/ && cp -r components public/"
   }
 }
