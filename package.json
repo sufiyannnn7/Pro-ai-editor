@@ -3,6 +3,7 @@
   "name": "pro-ai-image-editor",
   "version": "1.0.0",
   "private": true,
+  "homepage":".",
   "description": "Professional AI-powered image editing assistant optimized for static ESM deployment.",
   "scripts": {
     "build": "mkdir -p public && cp -rf index.html index.tsx App.tsx types.ts constants.tsx metadata.json services components public/"
