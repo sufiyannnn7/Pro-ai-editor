@@ -4,5 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Professional AI-powered image editing assistant optimized for static ESM deployment.",
-  "dependencies": {}
+  "scripts": {
+    "build": "mkdir -p public && cp -rf index.html index.tsx App.tsx types.ts constants.tsx metadata.json services components public/"
+  }
 }
