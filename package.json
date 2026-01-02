@@ -3,9 +3,6 @@
   "name": "pro-ai-image-editor",
   "version": "1.0.0",
   "private": true,
-  "description": "Professional AI-powered image editing assistant optimized for Vercel deployment.",
-  "scripts": {
-    "build": "echo 'Static ESM deployment: no build step required.'",
-    "start": "npx serve ."
-  }
+  "description": "Professional AI-powered image editing assistant optimized for static ESM deployment.",
+  "dependencies": {}
 }
