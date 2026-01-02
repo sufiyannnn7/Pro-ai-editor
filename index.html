@@ -4,38 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProAI Image Editor | Professional Face-Safe Enhancement</title>
+    <title>ProAI Editor | Professional Image Enhancement</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f1f5f9;
             color: #1e293b;
-            margin: 0;
             min-height: 100vh;
         }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
         }
-        .shimmer {
-            background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 50%, #eff6ff 100%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        .fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
+        .step-hidden { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -52,8 +41,160 @@
 }
 </script>
 </head>
-<body>
-    <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
+<body class="p-4 md:p-12 flex flex-col items-center">
+    <!-- API Key Error Overlay -->
+    <div id="api-error-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+        <div class="glass-card max-w-md w-full p-8 rounded-[2rem] text-center border-rose-200">
+            <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl">
+                <i class="fa-solid fa-key"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Configuration Missing</h2>
+            <p class="text-slate-500 mb-6 text-sm leading-relaxed">The Gemini API Key (API_KEY) has not been configured in your environment. Please set this up to enable AI features.</p>
+        </div>
+    </div>
+
+    <header class="w-full max-w-4xl flex items-center justify-between mb-12">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl rotate-2">
+                <i class="fa-solid fa-camera-retro text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">ProAI Editor</h1>
+                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Safe Portrait Enhancement</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-400 bg-white px-4 py-2 rounded-full border border-slate-100">
+            <i class="fa-solid fa-shield-halved text-emerald-500"></i> IDENTITY PROTECTION ON
+        </div>
+    </header>
+
+    <main id="app-root" class="w-full max-w-2xl">
+        <!-- Step 1: Preferences -->
+        <div id="step-1" class="glass-card rounded-[2.5rem] p-10 fade-in">
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">Refine Style</h2>
+            <p class="text-slate-500 mb-8">Personalize how the AI approaches your retouching.</p>
+            
+            <div class="space-y-8">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">Language</label>
+                    <div class="flex gap-3" id="lang-selector">
+                        <button data-lang="English" class="px-6 py-3 rounded-2xl text-sm font-bold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-100">English</button>
+                        <button data-lang="Hindi" class="px-6 py-3 rounded-2xl text-sm font-bold transition-all bg-white text-slate-600 border border-slate-100 hover:bg-slate-50">Hindi</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">Goal</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="goal-selector">
+                        <button data-goal="natural" class="p-6 rounded-3xl border-2 text-left transition-all flex items-start gap-4 border-indigo-600 bg-indigo-50/50">
+                            <div class="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-leaf"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm">Natural</p>
+                                <p class="text-[10px] text-slate-500 mt-1">Subtle tone fixes</p>
+                            </div>
+                        </button>
+                        <button data-goal="pro" class="p-6 rounded-3xl border-2 text-left transition-all flex items-start gap-4 border-slate-100 bg-white hover:border-indigo-200">
+                            <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-user-tie"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm">Professional</p>
+                                <p class="text-[10px] text-slate-500 mt-1">Studio polishing</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="next-to-2" class="w-full bg-slate-900 text-white py-5 rounded-3xl font-bold text-lg hover:bg-indigo-600 transition-all shadow-xl">
+                    Get Started <i class="fa-solid fa-chevron-right ml-2 text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Upload -->
+        <div id="step-2" class="glass-card rounded-[2.5rem] p-10 text-center step-hidden fade-in">
+            <button class="back-btn text-slate-400 hover:text-indigo-600 mb-6 flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <div class="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center text-3xl mx-auto mb-6">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">Upload Photo</h2>
+            <p class="text-slate-500 mb-8">Select a portrait to enhance professionally.</p>
+            
+            <input type="file" id="file-input" class="hidden" accept="image/*">
+            <button id="upload-trigger" class="w-full border-4 border-dashed border-slate-100 rounded-[2.5rem] p-12 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
+                <div class="bg-white w-14 h-14 rounded-2xl shadow-sm flex items-center justify-center text-slate-300 mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-plus text-xl"></i>
+                </div>
+                <p class="font-bold text-slate-700">Click to Browse</p>
+                <p class="text-xs text-slate-400 mt-2">Maximum file size 10MB</p>
+            </button>
+        </div>
+
+        <!-- Step 3: Prompt & Process -->
+        <div id="step-3" class="glass-card rounded-[2.5rem] p-10 step-hidden fade-in">
+            <button class="back-btn text-slate-400 hover:text-indigo-600 mb-6 flex items-center gap-2 text-xs font-black uppercase tracking-widest">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            
+            <div class="flex gap-6 items-center mb-8">
+                <div class="w-24 h-24 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                    <img id="image-preview" src="" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1">
+                    <h2 class="text-2xl font-bold text-slate-800">What's the plan?</h2>
+                    <p class="text-xs text-slate-500 mt-1">Describe rough improvements needed.</p>
+                </div>
+            </div>
+
+            <textarea id="prompt-input" placeholder="e.g. Warm up the lighting and sharpen the eyes..." class="w-full h-40 bg-white border border-slate-100 rounded-3xl p-6 text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all resize-none font-medium mb-6"></textarea>
+
+            <div id="processing-error" class="hidden bg-rose-50 border border-rose-100 rounded-2xl p-4 mb-6 flex gap-4 items-start">
+                <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <div>
+                    <p id="error-title" class="font-bold text-rose-800 text-sm">Processing Failed</p>
+                    <p id="error-msg" class="text-rose-600 text-[10px] mt-1 uppercase font-bold tracking-wider leading-relaxed"></p>
+                </div>
+            </div>
+
+            <button id="process-btn" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3">
+                <span id="btn-text">Apply Enhancements</span>
+                <i id="btn-icon" class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+        </div>
+
+        <!-- Step 4: Result -->
+        <div id="step-4" class="glass-card rounded-[2.5rem] p-10 step-hidden fade-in text-center">
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">Enhanced!</h2>
+            <p class="text-slate-500 mb-8 text-sm">Identity preserved. Aesthetics improved.</p>
+            
+            <div class="relative group mb-10 max-w-sm mx-auto">
+                <img id="final-result" class="w-full aspect-square object-cover rounded-[2.5rem] shadow-2xl border-8 border-white">
+                <div class="absolute -top-3 -right-3 bg-emerald-500 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                    HD Edit
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="reset-btn" class="flex-1 bg-white border border-slate-200 text-slate-600 py-5 rounded-3xl font-bold hover:bg-slate-50 transition-all">
+                    Start New
+                </button>
+                <a id="download-btn" href="#" download="pro-enhanced.png" class="flex-[2] bg-slate-900 text-white py-5 rounded-3xl font-bold flex items-center justify-center gap-3 hover:bg-indigo-600 transition-all shadow-xl">
+                    Download <i class="fa-solid fa-download"></i>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-auto py-12 text-center text-slate-400">
+        <p class="text-[10px] font-bold uppercase tracking-widest">Powered by Google Gemini 2.5 Flash</p>
+    </footer>
+
+    <script type="module" src="main.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 {
-  "name": "ProAI Image Editor",
-  "description": "Professional, identity-safe photo enhancement powered by Gemini AI. Retouch your portraits while keeping your natural facial structure intact.",
+  "name": "ProAI Editor",
+  "description": "Professional, identity-safe photo enhancement using Gemini AI.",
   "requestFramePermissions": []
 }

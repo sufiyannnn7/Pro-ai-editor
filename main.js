@@ -1,101 +1,161 @@
 
-import { GoogleGenAI } from 'https://esm.sh/@google/genai';
+import { GoogleGenAI } from "@google/genai";
 
-// --- CONFIGURATION ---
-const API_KEY = "AIzaSyCDIbD4ay8qslsl6cThrGnjBKuGkBiXP7w";
-const MODEL_NAME = "gemini-2.5-flash-image";
+// Configuration
+const API_KEY = process.env.API_KEY;
+const MODEL_NAME = 'gemini-3-flash-preview'; // Using stable flash for speed and reliability
 
 const SYSTEM_PROMPT = `
 Act as a professional high-end photo retoucher.
-Instruction: [REQUEST]
-Context: [GOAL]
-STRICT RULES:
-1. Do NOT change facial geometry, eyes, nose, or lips structure.
-2. Enhance skin tones, lighting, and clarity only.
-3. Keep the identity 100% recognizable.
-4. Return ONLY the edited image as the result.
+Strict Rules:
+1. PRESERVE IDENTITY: Do NOT change facial structure, features, or identity.
+2. ENHANCE: Improve lighting, skin tone, clarity, and professionalism.
+3. CONTEXT: User wants: [USER_PROMPT].
+4. OUTPUT: Return the primary edited image.
 `;
 
-// --- STATE ---
-let state = {
+// App State
+const state = {
     step: 1,
-    language: "English",
-    goal: "Natural enhancement",
+    language: 'English',
+    goal: 'natural',
     image: null,
     mimeType: null,
-    description: ""
+    loading: false
 };
 
-// --- DOM HELPERS ---
-const getEl = id => document.getElementById(id);
+// UI Elements
 const ui = {
-    steps: [getEl('step-1'), getEl('step-2'), getEl('step-3'), getEl('step-4')],
-    langBtns: document.querySelectorAll('.lang-btn'),
-    goalBtns: document.querySelectorAll('.goal-btn'),
-    toStep2: getEl('to-step-2'),
-    toStep3: getEl('to-step-3'),
-    fileInput: getEl('file-input'),
-    preview: getEl('image-preview'),
-    previewContainer: getEl('image-preview-container'),
-    placeholder: getEl('upload-placeholder'),
-    promptInput: getEl('prompt-input'),
-    processBtn: getEl('process-btn'),
-    btnContent: getEl('btn-content'),
-    btnLoading: getEl('btn-loading'),
-    errorContainer: getEl('error-container'),
-    errorTitle: getEl('error-title'),
-    errorText: getEl('error-text'),
-    finalResult: getEl('final-result'),
-    downloadLink: getEl('download-link'),
-    newImageBtn: getEl('new-image-btn'),
-    backBtns: document.querySelectorAll('.back-btn')
+    steps: [1, 2, 3, 4].map(n => document.getElementById(`step-${n}`)),
+    langBtns: document.querySelectorAll('#lang-selector button'),
+    goalBtns: document.querySelectorAll('#goal-selector button'),
+    nextTo2: document.getElementById('next-to-2'),
+    backBtns: document.querySelectorAll('.back-btn'),
+    uploadTrigger: document.getElementById('upload-trigger'),
+    fileInput: document.getElementById('file-input'),
+    imagePreview: document.getElementById('image-preview'),
+    promptInput: document.getElementById('prompt-input'),
+    processBtn: document.getElementById('process-btn'),
+    errorBox: document.getElementById('processing-error'),
+    errorTitle: document.getElementById('error-title'),
+    errorMsg: document.getElementById('error-msg'),
+    finalResult: document.getElementById('final-result'),
+    downloadBtn: document.getElementById('download-btn'),
+    resetBtn: document.getElementById('reset-btn'),
+    apiError: document.getElementById('api-error-overlay'),
+    btnText: document.getElementById('btn-text'),
+    btnIcon: document.getElementById('btn-icon')
 };
 
-// --- CORE LOGIC ---
-
-function navigate(stepNum) {
+// Navigation
+function navigateTo(stepNum) {
     ui.steps.forEach((el, idx) => {
-        if (idx + 1 === stepNum) {
-            el.classList.remove('hidden-step');
-        } else {
-            el.classList.add('hidden-step');
-        }
+        if (idx + 1 === stepNum) el.classList.remove('step-hidden');
+        else el.classList.add('step-hidden');
     });
     state.step = stepNum;
 }
 
-function handleError(err) {
-    ui.errorContainer.classList.remove('hidden');
-    console.error("AI Error:", err);
-    
-    let title = "Processing Error";
-    let message = err.message || "An unexpected error occurred.";
-
-    // Specific Gemini Error Handling
-    if (message.includes("SAFETY")) {
-        title = "Privacy Filter Active";
-        message = "The AI declined to edit this specific image for safety reasons. This often happens if the image is blurry, contains sensitive content, or the face isn't clear enough.";
-    } else if (message.includes("API key")) {
-        title = "Key Configuration Issue";
-        message = "The API key provided is invalid or expired. Please verify your Gemini API access.";
-    } else if (message.includes("fetch")) {
-        title = "Network Connection Lost";
-        message = "We couldn't reach the AI servers. Check your internet connection and try again.";
-    } else if (message.includes("quota")) {
-        title = "Usage Limit Reached";
-        message = "You have reached the free tier limit for Gemini. Please try again in a few minutes.";
+// Validation
+function validateConfig() {
+    if (!API_KEY || API_KEY.trim() === "") {
+        ui.apiError.classList.remove('hidden');
+        return false;
     }
-
-    ui.errorTitle.innerText = title;
-    ui.errorText.innerText = message;
+    return true;
 }
 
-// --- LISTENERS ---
+// Helpers
+function showError(title, msg) {
+    ui.errorBox.classList.remove('hidden');
+    ui.errorTitle.innerText = title;
+    ui.errorMsg.innerText = msg;
+    console.error(`[AI Error] ${title}: ${msg}`);
+}
 
+async function processImage() {
+    if (!validateConfig()) return;
+    
+    const prompt = ui.promptInput.value.trim();
+    if (prompt.length < 3) {
+        showError("Invalid Input", "Please provide a brief description of what to edit.");
+        return;
+    }
+
+    state.loading = true;
+    ui.processBtn.disabled = true;
+    ui.btnText.innerText = "Retouching...";
+    ui.btnIcon.className = "fa-solid fa-circle-notch animate-spin";
+    ui.errorBox.classList.add('hidden');
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
+        const cleanBase64 = state.image.split(',')[1];
+        const finalPrompt = SYSTEM_PROMPT.replace('[USER_PROMPT]', prompt);
+
+        const response = await ai.models.generateContent({
+            model: MODEL_NAME,
+            contents: {
+                parts: [
+                    { inlineData: { data: cleanBase64, mimeType: state.mimeType } },
+                    { text: finalPrompt }
+                ]
+            }
+        });
+
+        if (!response.candidates?.[0]?.content?.parts) {
+            throw new Error("EMPTY_RESPONSE");
+        }
+
+        let resultImage = null;
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                resultImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                break;
+            }
+        }
+
+        if (resultImage) {
+            ui.finalResult.src = resultImage;
+            ui.downloadBtn.href = resultImage;
+            navigateTo(4);
+        } else {
+            // Check for textual safety feedback
+            const textPart = response.candidates[0].content.parts.find(p => p.text);
+            if (textPart) throw new Error(`SAFETY: ${textPart.text}`);
+            throw new Error("NO_IMAGE_DATA");
+        }
+
+    } catch (err) {
+        let title = "Editing Failed";
+        let msg = "An unexpected error occurred. Please try again.";
+
+        const errStr = err.toString().toUpperCase();
+        if (errStr.includes("SAFETY")) {
+            title = "Safety Filter";
+            msg = "The AI declined this edit for safety or privacy reasons. Try a clearer image.";
+        } else if (errStr.includes("429")) {
+            title = "Busy Server";
+            msg = "Limit reached. Please wait 60 seconds and try again.";
+        } else if (errStr.includes("NETWORK")) {
+            title = "Connection Lost";
+            msg = "Please check your internet connection.";
+        }
+
+        showError(title, msg);
+    } finally {
+        state.loading = false;
+        ui.processBtn.disabled = false;
+        ui.btnText.innerText = "Apply Enhancements";
+        ui.btnIcon.className = "fa-solid fa-wand-magic-sparkles";
+    }
+}
+
+// Listeners
 ui.langBtns.forEach(btn => {
     btn.onclick = () => {
-        ui.langBtns.forEach(b => b.className = "lang-btn px-6 py-3 rounded-2xl text-sm font-bold transition-all bg-white text-slate-600 border border-slate-100");
-        btn.className = "lang-btn px-6 py-3 rounded-2xl text-sm font-bold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-200";
+        ui.langBtns.forEach(b => b.className = "px-6 py-3 rounded-2xl text-sm font-bold transition-all bg-white text-slate-600 border border-slate-100 hover:bg-slate-50");
+        btn.className = "px-6 py-3 rounded-2xl text-sm font-bold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-100";
         state.language = btn.dataset.lang;
     };
 });
@@ -103,105 +163,44 @@ ui.langBtns.forEach(btn => {
 ui.goalBtns.forEach(btn => {
     btn.onclick = () => {
         ui.goalBtns.forEach(b => {
-            b.className = "goal-btn flex items-center gap-4 p-5 rounded-2xl text-left transition-all bg-white border-2 border-transparent hover:border-slate-100 shadow-sm";
-            b.querySelector('i').className = b.querySelector('i').className.replace('text-indigo-600', 'text-slate-400');
-            b.querySelector('span').className = "font-bold text-slate-600";
+            b.className = "p-6 rounded-3xl border-2 text-left transition-all flex items-start gap-4 border-slate-100 bg-white hover:border-indigo-200";
+            b.querySelector('div').className = "w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center text-xl";
         });
-        btn.className = "goal-btn flex items-center gap-4 p-5 rounded-2xl text-left transition-all bg-indigo-50 border-2 border-indigo-600";
-        btn.querySelector('i').className = btn.querySelector('i').className.replace('text-slate-400', 'text-indigo-600');
-        btn.querySelector('span').className = "font-bold text-indigo-900";
+        btn.className = "p-6 rounded-3xl border-2 text-left transition-all flex items-start gap-4 border-indigo-600 bg-indigo-50/50";
+        btn.querySelector('div').className = "w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl";
         state.goal = btn.dataset.goal;
     };
 });
 
-ui.toStep2.onclick = () => navigate(2);
+ui.nextTo2.onclick = () => navigateTo(2);
+ui.backBtns.forEach(btn => btn.onclick = () => navigateTo(state.step - 1));
+ui.uploadTrigger.onclick = () => ui.fileInput.click();
 
 ui.fileInput.onchange = (e) => {
     const file = e.target.files[0];
     if (file) {
         if (file.size > 10 * 1024 * 1024) {
-            alert("File is too large! Please choose an image under 10MB.");
+            alert("File too large. Max 10MB.");
             return;
         }
         const reader = new FileReader();
-        reader.onload = (event) => {
-            state.image = event.target.result;
+        reader.onload = (ev) => {
+            state.image = ev.target.result;
             state.mimeType = file.type;
-            ui.preview.src = state.image;
-            ui.previewContainer.classList.remove('hidden');
-            ui.placeholder.classList.add('hidden');
-            ui.toStep3.disabled = false;
-            ui.toStep3.className = "w-full mt-8 py-5 rounded-2xl font-bold text-lg bg-slate-900 text-white hover:bg-slate-800 shadow-xl";
+            ui.imagePreview.src = state.image;
+            navigateTo(3);
         };
         reader.readAsDataURL(file);
     }
 };
 
-ui.toStep3.onclick = () => navigate(3);
-
-ui.promptInput.oninput = (e) => {
-    state.description = e.target.value;
-    const isValid = state.description.trim().length >= 3;
-    ui.processBtn.disabled = !isValid;
-    ui.processBtn.className = isValid 
-        ? "w-full py-5 rounded-2xl font-bold text-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100" 
-        : "w-full py-5 rounded-2xl font-bold text-lg bg-slate-100 text-slate-300 cursor-not-allowed transition-all";
+ui.processBtn.onclick = processImage;
+ui.resetBtn.onclick = () => {
+    state.image = null;
+    ui.fileInput.value = "";
+    ui.promptInput.value = "";
+    navigateTo(1);
 };
 
-ui.processBtn.onclick = async () => {
-    ui.btnContent.classList.add('hidden');
-    ui.btnLoading.classList.remove('hidden');
-    ui.errorContainer.classList.add('hidden');
-    ui.processBtn.disabled = true;
-
-    try {
-        if (!API_KEY || API_KEY.startsWith("YOUR_")) {
-            throw new Error("API key is not configured correctly.");
-        }
-
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
-        const cleanBase64 = state.image.split(',')[1];
-        
-        const prompt = SYSTEM_PROMPT
-            .replace("[REQUEST]", state.description)
-            .replace("[GOAL]", state.goal);
-
-        const response = await ai.models.generateContent({
-            model: MODEL_NAME,
-            contents: {
-                parts: [
-                    { inlineData: { data: cleanBase64, mimeType: state.mimeType } },
-                    { text: prompt }
-                ]
-            }
-        });
-
-        const parts = response.candidates[0].content.parts;
-        let finalImg = null;
-
-        for (const p of parts) {
-            if (p.inlineData) {
-                finalImg = `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`;
-                break;
-            }
-        }
-
-        if (finalImg) {
-            ui.finalResult.src = finalImg;
-            ui.downloadLink.href = finalImg;
-            navigate(4);
-        } else {
-            throw new Error("SAFETY: The model produced a text response instead of an image. This usually indicates a safety content filter.");
-        }
-
-    } catch (err) {
-        handleError(err);
-    } finally {
-        ui.btnContent.classList.remove('hidden');
-        ui.btnLoading.classList.add('hidden');
-        ui.processBtn.disabled = false;
-    }
-};
-
-ui.backBtns.forEach(btn => btn.onclick = () => navigate(state.step - 1));
-ui.newImageBtn.onclick = () => window.location.reload();
+// Initial Setup
+validateConfig();
