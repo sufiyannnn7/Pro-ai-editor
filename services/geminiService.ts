@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT_TEMPLATE } from "../constants";
 import { EditingGoal } from "../types";
@@ -9,8 +8,14 @@ export const editImage = async (
   userDescription: string,
   goal: EditingGoal
 ): Promise<string> => {
-  // Always initialize GoogleGenAI inside the function to ensure the latest API key is used
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Ensure the API key is present in the environment
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing. Please configure the 'API_KEY' environment variable in your deployment settings.");
+  }
+
+  // Initialize the GenAI client with the secure environment variable
+  const ai = new GoogleGenAI({ apiKey });
   
   const finalPrompt = SYSTEM_PROMPT_TEMPLATE
     .replace("[GOAL_HINT]", goal)
@@ -34,7 +39,7 @@ export const editImage = async (
     });
 
     if (!response.candidates?.[0]?.content?.parts) {
-      throw new Error("Invalid response structure from AI.");
+      throw new Error("The AI model did not return a valid response structure.");
     }
 
     for (const part of response.candidates[0].content.parts) {
@@ -43,11 +48,9 @@ export const editImage = async (
       }
     }
 
-    throw new Error("No edited image data was returned by the AI. It may have only returned text.");
+    throw new Error("No image data was generated. The AI may have returned text instead. Please try a different prompt.");
   } catch (error: any) {
     console.error("Gemini Edit Error:", error);
-    // Provide a more descriptive error message if possible
-    const message = error.message || "An unexpected error occurred during image processing.";
-    throw new Error(message);
+    throw new Error(error.message || "An unexpected error occurred during image processing.");
   }
 };
